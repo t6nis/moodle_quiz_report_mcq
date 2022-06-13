@@ -356,68 +356,8 @@ class quiz_mcq_report extends quiz_default_report {
             // Calculate grade achieved and add it to this row and to grades array. Grades are stored as a
             // proportion of the sumgrades values (i.e. the sum of question weights in the quiz, which is
             // then scaled up to give the actual grade)
-            /////////////////
-            // Standardized grade
-            $standardizations = $DB->get_records('standardization', array('courseid' => $quiz->course, 'quizid' => $quiz->id), 'id');
-            if (!empty($standardizations)) {
-                $sql_str = 'AND sq.userid IN ('.$user->id.')';
-                $params = array('attemptid' => $userattempts[$u]->id, 'courseid' => $quiz->course, 'quizid' => $quiz->id);
-                $standardization_attempts = $DB->get_records_sql(''
-                    . 'SELECT * FROM {standardization_qattempts} as sq WHERE sq.courseid = :courseid '
-                    . 'AND sq.attemptid = :attemptid AND sq.quizid = :quizid '.$sql_str, $params);
+            $grade = round($quiz->grade * $userattempts[$u]->sumgrades / $quiz->sumgrades, $quiz->decimalpoints);
 
-                $standardization_total = 0;
-                $averagesum_total = 0;
-                $cnt = 0;
-                $cnt1 = 0;
-                foreach ($standardizations as $key => $value) {
-                    if ($value->standardizationsum > 0) {
-                        $standardization_total += $value->standardizationsum;
-                        $cnt++;
-                    }
-                    if ($value->averagesum > 0) {
-                        $averagesum_total += $value->averagesum;
-                        $cnt1++;
-                    }
-                }
-
-                if ($cnt > 1) {
-                    $standardization_total = $standardization_total / $cnt;
-                }
-                if ($cnt1 > 1) {
-                    $averagesum_total = $averagesum_total / $cnt1;
-                }
-                $newarr = array();
-
-                foreach ($standardization_attempts as $key => $value) {
-                    foreach ($value as $key1 => $value1) {
-                        $newarr[$key1][$key] = $value1;
-                    }
-                }
-
-                // Table
-                $standardization_score_total = 0;
-                foreach ($newarr as $key => $value) {
-                    if ($key == 'standardizationscore') {
-                        foreach ($value as $key1 => $value1) {
-                            $standardization_score_total += $value1;
-                        }
-                    }
-                }
-
-                // Total grade with standardizations
-                // WARNING! HARDCODED VALUES!
-                $total = round(50 + ((16 * ($standardization_score_total - 0)) / $standardization_total), 0);
-                if ($total <= 0) {
-                    $total = 1;
-                } else if ($total >= 100) {
-                    $total = 100;
-                }
-                $grade = $total;
-            } else {
-                $grade = round($quiz->grade * $userattempts[$u]->sumgrades / $quiz->sumgrades, $quiz->decimalpoints);
-            }
-            ///////
             array_push($grades, $grade);
             array_push($optiondatarow, $grade);
 
